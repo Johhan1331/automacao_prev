@@ -3,7 +3,7 @@ from docx import Document
 from datetime import date
 
 data_atual = date.today().strftime("%d.%m.%Y")
-pasta_data = Path(r"X:\Comum-PagamentosDiarios\2026\09 - SETEMBRO") / "XX.XX.XXXX"
+pasta_data = Path(r"X:\Comum-PagamentosDiarios\2026\09 - SETEMBRO") / "21.09.2026"
 pasta_data.mkdir(exist_ok=True)
 
 pasta_manha = pasta_data / "MANHÃ"
