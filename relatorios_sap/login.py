@@ -7,10 +7,17 @@ import time
 import tkinter as tk
 from tkinter import simpledialog
 
+# CONFIGURAÇÃO DAS DATAS
+DATA_INICIAL = "18.09.2026"
+DATA_FINAL = "21.09.2026"
+
+#CONFIGURAÇÕES DO CHROME
 driver = webdriver.Chrome()
+driver.maximize_window()
 wait = WebDriverWait(driver, 20)
 
 driver.get("https://sapprd.hec.icatuseguros.com.br/sap/bc/ui2/flp#Shell-home")
+driver.execute_script("document.body.style.zoom='70%'")
 
 # AVANÇAR TELA INICIAL SAP
 button_avancar = driver.find_element(By.CLASS_NAME, "urBtnCnt")
@@ -89,6 +96,7 @@ app = wait.until(
 app.click()
 
 driver.switch_to.frame("application-Shell-startGUI-iframe")
+driver.execute_script("document.body.style.zoom='70%'")
 
 # PREENCHIMENTO DOS PARÂMETROS ZCD011
 # EMPRESA
@@ -122,7 +130,7 @@ data_inicial = wait.until(
 )
 
 data_inicial.clear()
-data_inicial.send_keys("01.09.2026")
+data_inicial.send_keys(DATA_INICIAL)
 
 print("Data inicial preenchida!")
 
@@ -134,7 +142,7 @@ data_final = wait.until(
 )
 
 data_final.clear()
-data_final.send_keys("21.09.2026")
+data_final.send_keys(DATA_FINAL)
 
 print("Data final preenchida!")
 
@@ -146,7 +154,7 @@ vencimento_inicial = wait.until(
 )
 
 vencimento_inicial.clear()
-vencimento_inicial.send_keys("01.09.2026")
+vencimento_inicial.send_keys(DATA_INICIAL)
 print("Vencimento inicial preenchido!")
 
 # DATA DE VENCIMENTO FINAL
@@ -157,7 +165,7 @@ vencimento_final = wait.until(
 )
 
 vencimento_final.clear()
-vencimento_final.send_keys("21.09.2026")
+vencimento_final.send_keys(DATA_FINAL)
 print("Vencimento final preenchido!")
 
 # MARCAR "BLOQUEIO DE COMPENSAÇÃO"
@@ -167,10 +175,10 @@ radio = wait.until(
     )
 )
 
-radio.click()
+driver.execute_script("arguments[0].click();", radio)
 print("Bloqueio de Compensação marcado!")
 
-# EXECUTAR RELATÓRIO
+
 # EXECUTAR RELATÓRIO
 
 while True:
