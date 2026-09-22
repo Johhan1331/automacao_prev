@@ -6,21 +6,44 @@ from selenium.common.exceptions import StaleElementReferenceException
 import time
 import tkinter as tk
 from tkinter import simpledialog
-from selenium.webdriver.common.keys import Keys
-
 from pathlib import Path
+from datetime import date
 
-pasta_manha = Path(
-    r"X:\Comum-PagamentosDiarios\2026\09 - SETEMBRO\26.09.2026\MANHÃ"
+# CONFIGURAÇÕES DE PATH
+PASTA_RAIZ = Path(r"X:\Comum-PagamentosDiarios")
+
+MESES = [
+    "01 - JANEIRO",
+    "02 - FEVEREIRO",
+    "03 - MARÇO",
+    "04 - ABRIL",
+    "05 - MAIO",
+    "06 - JUNHO",
+    "07 - JULHO",
+    "08 - AGOSTO",
+    "09 - SETEMBRO",
+    "10 - OUTUBRO",
+    "11 - NOVEMBRO",
+    "12 - DEZEMBRO"
+]
+
+data_atual = date.today()
+pasta_mes = MESES[data_atual.month - 1]
+data_formatada = data_atual.strftime("%d.%m.%Y")
+
+pasta_manha = (
+    PASTA_RAIZ
+    / str(data_atual.year)
+    / pasta_mes
+    / data_formatada
+    / "MANHÃ"
 )
 
+# DEFINIR DATAS DO RELATÓRIO
+DATA_INICIAL = "21.09.2026"
+DATA_FINAL = "22.09.2026"
 
-# CONFIGURAÇÃO DAS DATAS
-
-DATA_INICIAL = "18.09.2026"
-DATA_FINAL = "21.09.2026"
-
-
+# CONFIGURAÇÃO DO CHROME
 options = webdriver.ChromeOptions()
 
 prefs = {
@@ -33,45 +56,32 @@ prefs = {
 options.add_experimental_option("prefs", prefs)
 
 driver = webdriver.Chrome(options=options)
-
 wait = WebDriverWait(driver, 20)
 
 driver.maximize_window()
-
 driver.get("https://sapprd.hec.icatuseguros.com.br/sap/bc/ui2/flp#Shell-home")
-
-driver.execute_script("document.body.style.zoom='70%'")
+driver.execute_script("document.body.style.zoom='60%'")
 
 
 # AVANÇAR TELA INICIAL SAP
-
 button_avancar = driver.find_element(By.CLASS_NAME, "urBtnCnt")
 
 time.sleep(2)
-
 button_avancar.click()
 
-
 # CAMPO E-MAIL DO WINDOWS
-
 input_email = wait.until(
-    EC.presence_of_element_located((By.ID, "i0116"))
-)
-
+    EC.presence_of_element_located((By.ID, "i0116")))
 input_email.send_keys("joferreira@icatuseguros.com.br")
 
 
 # AVANÇAR O E-MAIL
-
 button_avancar_email = wait.until(
-    EC.element_to_be_clickable((By.ID, "idSIButton9"))
-)
-
+    EC.element_to_be_clickable((By.ID, "idSIButton9")))
 button_avancar_email.click()
 
 
 # CAMPO SENHA DO WINDOWS
-
 def pedir_senha(mensagem="Digite sua senha:"):
     root = tk.Tk()
     root.withdraw()
@@ -83,7 +93,6 @@ def pedir_senha(mensagem="Digite sua senha:"):
     )
 
     root.destroy()
-
     return senha
 
 
@@ -95,17 +104,14 @@ while True:
         break
 
     input_senha = wait.until(
-        EC.element_to_be_clickable((By.ID, "i0118"))
-    )
+        EC.element_to_be_clickable((By.ID, "i0118")))
 
     input_senha.send_keys(senha)
 
     button_avancar_senha = wait.until(
-        EC.element_to_be_clickable((By.ID, "idSIButton9"))
-    )
+        EC.element_to_be_clickable((By.ID, "idSIButton9")))
 
     button_avancar_senha.click()
-
     time.sleep(2)
 
     confirm_senha = driver.find_elements(By.ID, "i0118")
@@ -117,18 +123,13 @@ while True:
 
     break
 
-
 # CONFIRMAÇÃO CONTINUAR CONECTADO
-
 button_sim = wait.until(
-    EC.element_to_be_clickable((By.ID, "idSIButton9"))
-)
+    EC.element_to_be_clickable((By.ID, "idSIButton9")))
 
 button_sim.click()
 
-
 # ABRIR ZCD011
-
 app = wait.until(
     EC.element_to_be_clickable(
         (By.CSS_SELECTOR, 'a[href*="sap-ui2-tcode=ZCD011"]')
@@ -138,12 +139,10 @@ app = wait.until(
 app.click()
 
 driver.switch_to.frame("application-Shell-startGUI-iframe")
-
-driver.execute_script("document.body.style.zoom='70%'")
+driver.execute_script("document.body.style.zoom='60%'")
 
 
 # PREENCHIMENTO DOS PARÂMETROS ZCD011
-
 empresa = wait.until(
     EC.presence_of_element_located(
         (By.CSS_SELECTOR, 'input[title="Empresa"]')
@@ -151,11 +150,8 @@ empresa = wait.until(
 )
 
 empresa.clear()
-
 empresa.send_keys("1010")
-
 print("Empresa preenchida!")
-
 
 tipo_documento = wait.until(
     EC.presence_of_element_located(
@@ -164,9 +160,7 @@ tipo_documento = wait.until(
 )
 
 tipo_documento.clear()
-
 tipo_documento.send_keys("56")
-
 print("Tipo de documento preenchido!")
 
 
@@ -177,9 +171,7 @@ data_inicial = wait.until(
 )
 
 data_inicial.clear()
-
 data_inicial.send_keys(DATA_INICIAL)
-
 print("Data inicial preenchida!")
 
 
@@ -190,9 +182,7 @@ data_final = wait.until(
 )
 
 data_final.clear()
-
 data_final.send_keys(DATA_FINAL)
-
 print("Data final preenchida!")
 
 
@@ -203,9 +193,7 @@ vencimento_inicial = wait.until(
 )
 
 vencimento_inicial.clear()
-
 vencimento_inicial.send_keys(DATA_INICIAL)
-
 print("Vencimento inicial preenchido!")
 
 
@@ -216,23 +204,69 @@ vencimento_final = wait.until(
 )
 
 vencimento_final.clear()
-
 vencimento_final.send_keys(DATA_FINAL)
-
 print("Vencimento final preenchido!")
 
 
-# BLOQUEIO DE COMPENSAÇÃO
-
-radio = wait.until(
+# SELEÇÃO MULTIPLA DE TIPOS DE DOCUMENTOS
+botao_selecao_multipla = wait.until(
     EC.element_to_be_clickable(
-        (By.CSS_SELECTOR, 'span[role="radio"][aria-label="Bloqueio de Compensação"]')
+        (By.ID, "M0:46:::19:78")
     )
 )
 
-driver.execute_script("arguments[0].click();", radio)
+botao_selecao_multipla.click()
+tipos_documento = ["62", "65", "79"]
 
-print("Bloqueio de Compensação marcado!")
+for i, valor in enumerate(tipos_documento):
+    campo_id = f"M1:46:1:2B256:1[{i + 2},2]_c"
+
+    campo = wait.until(
+        EC.element_to_be_clickable((By.ID, campo_id))
+    )
+
+    campo.click()
+    time.sleep(1)
+
+    campo = wait.until(
+        EC.element_to_be_clickable((By.ID, campo_id))
+    )
+
+    campo.send_keys(valor)
+    print(f"Tipo {valor} preenchido!")
+
+
+# TRANSFERIR SELEÇÃO
+botao_transferir = wait.until(
+    EC.element_to_be_clickable(
+        (By.CSS_SELECTOR, 'div[role="button"][title="Transferir (F8)"]')
+    )
+)
+
+botao_transferir.click()
+print("Tipos de documento transferidos!")
+
+# BLOQUEIO DE COMPENSAÇÃO
+time.sleep(2)
+
+while True:
+    try:
+        radio = wait.until(
+            EC.element_to_be_clickable(
+                (
+                    By.CSS_SELECTOR,
+                    'span[role="radio"][aria-label="Bloqueio de Compensação"]'
+                )
+            )
+        )
+
+        driver.execute_script("arguments[0].click();", radio)
+
+        print("Bloqueio de Compensação marcado!")
+        break
+
+    except StaleElementReferenceException:
+        print("SAP atualizou o elemento. Localizando Bloqueio novamente...")
 
 
 # EXECUTAR RELATÓRIO
@@ -246,46 +280,47 @@ while True:
         )
 
         botao_executar.click()
-
         break
 
     except StaleElementReferenceException:
         print("SAP atualizou a tela. Localizando o botão novamente...")
 
-
 print("Relatório executado!")
 
 
-# MUDAR PARA VISUALIZAÇÃO
-
+# MODO DE EXIBIÇÃO
 botao_visualizacao = wait.until(
     EC.element_to_be_clickable(
-        (By.CSS_SELECTOR, 'div[role="button"][title="Visualização (Ctrl+Shift+F10)"]')
+        (
+            By.CSS_SELECTOR,
+            'div[role="button"][title="Visualização (Ctrl+Shift+F10)"]'
+        )
     )
 )
 
 botao_visualizacao.click()
-
-print("Visualização alterada!")
+print("Modo de exibição aberto!")
 
 
 # ABRIR OPÇÕES DE EXPORTAÇÃO
+time.sleep(2)
 
 while True:
     try:
         botao_file_local = wait.until(
             EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, 'div[role="button"][title="File local... (Ctrl+Shift+F9)"]')
+                (
+                    By.CSS_SELECTOR,
+                    'div[role="button"][title="File local... (Ctrl+Shift+F9)"]'
+                )
             )
         )
 
         botao_file_local.click()
-
         break
 
     except StaleElementReferenceException:
         print("SAP atualizou a barra. Localizando File local novamente...")
-
 
 print("Menu de exportação aberto!")
 
@@ -300,7 +335,6 @@ planilha = wait.until(
 )
 
 planilha.click()
-
 print("Planilha eletrônica selecionada!")
 
 
@@ -312,7 +346,6 @@ botao_avancar_exportacao = wait.until(
 )
 
 botao_avancar_exportacao.click()
-
 print("Avançar clicado!")
 
 
@@ -324,7 +357,6 @@ botao_exportar = wait.until(
 )
 
 botao_exportar.click()
-
 print("Exportar para... clicado!")
 
 
@@ -336,8 +368,5 @@ botao_ok = wait.until(
 )
 
 botao_ok.click()
-
 print("OK clicado!")
-
-
 input("Pressione ENTER manualmente para fechar o navegador...")
