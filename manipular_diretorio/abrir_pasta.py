@@ -24,6 +24,11 @@ resgate_is.mkdir(exist_ok=True)
 resgate_rg = pasta_manha / "RESGATE RG"
 resgate_rg.mkdir(exist_ok=True)
 
+renda_is = pasta_manha / "RENDA IS"
+renda_is.mkdir(exist_ok=True)
+renda_rg = pasta_manha / "RENDA RG"
+renda_rg.mkdir(exist_ok=True)
+
 portabilidade_is = pasta_manha / "PORTABILIDADE IS"
 portabilidade_is.mkdir(exist_ok=True)
 portabilidade_rg = pasta_manha / "PORTABILIDADE RG"
