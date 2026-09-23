@@ -43,8 +43,8 @@ pasta_manha = (
     / "MANHÃ"
 )
 
-DATA_INICIAL = "21.09.2026"
-DATA_FINAL = "22.09.2026"
+DATA_INICIAL = "22.09.2026"
+DATA_FINAL = "23.09.2026"
 
 EMPRESA = "1010"
 
@@ -78,7 +78,6 @@ driver.execute_script("document.body.style.zoom='60%'")
 # ============================================================
 # LOGIN SAP
 # ============================================================
-
 button_avancar = driver.find_element(
     By.CLASS_NAME,
     "urBtnCnt"
@@ -685,7 +684,6 @@ while True:
 tipos_documento = [
     "62",
     "65",
-    "79",
     "63"
 ]
 
