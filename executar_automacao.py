@@ -252,8 +252,8 @@ class Aplicacao:
 
         valores = []
         campos_data = (
-            ("data inicial", self.data_inicial, self.data_inicial.get()),
-            ("data final", self.data_final, self.data_final.get()),
+              ("data inicial", self.data_inicial_entry, self.data_inicial.get()),
+              ("data final", self.data_final_entry, self.data_final.get()),
         )
         for nome, campo, valor in campos_data:
             try:
