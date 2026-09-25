@@ -4,8 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import StaleElementReferenceException
 import time
-import tkinter as tk
-from tkinter import simpledialog
+import os
 from pathlib import Path
 from datetime import date
 
@@ -14,7 +13,7 @@ from datetime import date
 # CONFIGURAÇÕES
 # ============================================================
 
-PASTA_RAIZ = Path(r"X:\Comum-PagamentosDiarios")
+PASTA_RAIZ = Path(os.environ["AUTOMACAO_PASTA_RAIZ"])
 
 MESES = [
     "01 - JANEIRO",
@@ -31,7 +30,7 @@ MESES = [
     "12 - DEZEMBRO"
 ]
 
-data_atual = date(2026, 9, 26)
+data_atual = date.fromisoformat(os.environ["AUTOMACAO_DATA_PASTA"])
 pasta_mes = MESES[data_atual.month - 1]
 data_formatada = data_atual.strftime("%d.%m.%Y")
 
@@ -43,10 +42,18 @@ pasta_manha = (
     / "MANHÃ"
 )
 
-DATA_INICIAL = "23.09.2026"
-DATA_FINAL = "24.09.2026"
-
 EMPRESA = "1010"
+
+
+# ============================================================
+# INFORMAÇÕES RECEBIDAS PELA APLICAÇÃO PRINCIPAL
+# ============================================================
+
+email = os.environ["AUTOMACAO_EMAIL"]
+senha = os.environ["AUTOMACAO_SENHA"]
+DATA_INICIAL = os.environ["AUTOMACAO_DATA_INICIAL"]
+DATA_FINAL = os.environ["AUTOMACAO_DATA_FINAL"]
+
 
 # ============================================================
 # CONFIGURAÇÃO DO CHROME
@@ -94,9 +101,7 @@ input_email = wait.until(
     )
 )
 
-input_email.send_keys(
-    "joferreira@icatuseguros.com.br"
-)
+input_email.send_keys(email)
 
 
 # AVANÇAR E-MAIL
@@ -110,63 +115,26 @@ button_avancar_email.click()
 
 
 # SENHA
-def pedir_senha(mensagem="Digite sua senha:"):
-    root = tk.Tk()
-    root.withdraw()
-
-    senha = simpledialog.askstring(
-        "Login SAP",
-        mensagem,
-        show="*"
+input_senha = wait.until(
+    EC.element_to_be_clickable(
+        (By.ID, "i0118")
     )
+)
 
-    root.destroy()
+input_senha.send_keys(senha)
 
-    return senha
-
-
-while True:
-
-    senha = pedir_senha(
-        mensagem="Digite sua senha:"
+button_avancar_senha = wait.until(
+    EC.element_to_be_clickable(
+        (By.ID, "idSIButton9")
     )
+)
 
-    if not senha:
-        print("Nenhuma senha informada.")
-        break
+button_avancar_senha.click()
 
-    input_senha = wait.until(
-        EC.element_to_be_clickable(
-            (By.ID, "i0118")
-        )
-    )
+time.sleep(2)
 
-    input_senha.send_keys(senha)
-
-    button_avancar_senha = wait.until(
-        EC.element_to_be_clickable(
-            (By.ID, "idSIButton9")
-        )
-    )
-
-    button_avancar_senha.click()
-
-    time.sleep(2)
-
-    confirm_senha = driver.find_elements(
-        By.ID,
-        "i0118"
-    )
-
-    if confirm_senha:
-
-        print("Senha incorreta. Digite novamente.")
-
-        confirm_senha[0].clear()
-
-        continue
-
-    break
+if driver.find_elements(By.ID, "i0118"):
+    raise RuntimeError("Senha recusada pelo SAP.")
 
 
 # CONTINUAR CONECTADO
@@ -896,5 +864,7 @@ print("Excel da empresa 1013 exportado!")
 # FINALIZAR
 # ============================================================
 
-input("Pressione ENTER manualmente para fechar o navegador...")
+print("Exportações concluídas. Fechando o navegador automaticamente...")
+time.sleep(3)
 driver.quit()
+print("Navegador fechado.")

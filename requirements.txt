@@ -1,0 +1,4 @@
+openpyxl
+python-docx
+pywin32
+selenium

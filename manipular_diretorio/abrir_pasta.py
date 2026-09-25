@@ -1,9 +1,21 @@
 from pathlib import Path
 from docx import Document
 from datetime import date
+import os
 
-data_atual = date.today().strftime("%d.%m.%Y")
-pasta_data = Path(r"X:\Comum-PagamentosDiarios\2026\09 - SETEMBRO") / "25.09.2026"
+pasta_raiz = Path(os.environ["AUTOMACAO_PASTA_RAIZ"])
+data_atual = date.fromisoformat(os.environ["AUTOMACAO_DATA_PASTA"])
+pasta_data = (
+	pasta_raiz
+	/ str(data_atual.year)
+	/ [
+		"01 - JANEIRO", "02 - FEVEREIRO", "03 - MARÇO",
+		"04 - ABRIL", "05 - MAIO", "06 - JUNHO",
+		"07 - JULHO", "08 - AGOSTO", "09 - SETEMBRO",
+		"10 - OUTUBRO", "11 - NOVEMBRO", "12 - DEZEMBRO"
+	][data_atual.month - 1]
+	/ data_atual.strftime("%d.%m.%Y")
+)
 pasta_data.mkdir(exist_ok=True)
 
 pasta_manha = pasta_data / "MANHÃ"

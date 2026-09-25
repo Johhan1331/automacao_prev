@@ -1,12 +1,13 @@
 from pathlib import Path
 from datetime import date, timedelta
+import os
 import shutil
 from abrir_pasta import pasta_manha
 
 # CCONFIGURAÇÕES E IMPORTAÇÕES
 
 NOME_PLANILHA = "Planilha de aprovação_Manhã.xlsx"
-PASTA_RAIZ = Path(r"X:\Comum-PagamentosDiarios")
+PASTA_RAIZ = Path(os.environ["AUTOMACAO_PASTA_ORIGEM"])
 
 # ENCONTRAR A ÚLTIMA PLANILHA UTILIZADA
 

@@ -1,14 +1,18 @@
 from pathlib import Path
 from datetime import date, datetime
+import os
 from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 import win32com.client as win32
 
+
 # ============================================================
 # CONFIGURAÇÃO DE PASTA
 # ============================================================
-PASTA_RAIZ = Path(r"X:\Comum-PagamentosDiarios")
+
+PASTA_RAIZ = Path(os.environ["AUTOMACAO_PASTA_RAIZ"])
+
 MESES = [
     "01 - JANEIRO",
     "02 - FEVEREIRO",
@@ -24,11 +28,14 @@ MESES = [
     "12 - DEZEMBRO"
 ]
 
+
 # ============================================================
 # DATA DA PASTA
 # ============================================================
+
 # DATA TEMPORÁRIA PARA TESTES
-data_atual = date(2026, 9, 26)
+data_atual = date.fromisoformat(os.environ["AUTOMACAO_DATA_PASTA"])
+
 pasta_mes = MESES[data_atual.month - 1]
 data_formatada = data_atual.strftime("%d.%m.%Y")
 
@@ -39,6 +46,8 @@ pasta_manha = (
     / data_formatada
     / "MANHÃ"
 )
+
+
 # ============================================================
 # HORÁRIO DA EXTRAÇÃO
 # ============================================================
@@ -47,34 +56,48 @@ if datetime.now().hour < 10:
     HORARIO_RELATORIO = "8H"
 else:
     HORARIO_RELATORIO = "11H"
-    
-# IDENTIFICAÇÃO DO EXCEL NA PASTA "MANHA"
+
+
+# ============================================================
+# IDENTIFICAÇÃO DOS EXCELS NA PASTA MANHÃ
+# ============================================================
+
 arquivos_excel = [
     arquivo
     for arquivo in pasta_manha.glob("EXPORT_*.xlsx")
 ]
 
-print(f"Pasta analisada:")
+print("Pasta analisada:")
 print(pasta_manha)
 print()
+
 print("Arquivos encontrados:")
 
 for arquivo in arquivos_excel:
     print(arquivo.name)
 
+
 arquivo_1010 = None
 arquivo_1013 = None
 
+
 for arquivo in arquivos_excel:
-    planilha = load_workbook(
+
+    workbook = load_workbook(
         arquivo,
         read_only=True,
         data_only=True
-    ).active
+    )
 
-    empresa = str(planilha["C4"].value).strip()
+    planilha = workbook.active
 
-    print(f"{arquivo.name} → Empresa: {empresa}")
+    empresa = str(
+        planilha["C4"].value
+    ).strip()
+
+    print(
+        f"{arquivo.name} -> Empresa: {empresa}"
+    )
 
     if empresa == "1010":
         arquivo_1010 = arquivo
@@ -82,23 +105,45 @@ for arquivo in arquivos_excel:
     elif empresa == "1013":
         arquivo_1013 = arquivo
 
-print()
-print("Arquivo 1010:", arquivo_1010.name if arquivo_1010 else "Não encontrado")
-print("Arquivo 1013:", arquivo_1013.name if arquivo_1013 else "Não encontrado")
+    workbook.close()
+
 
 print()
 
-planilha_1010 = load_workbook(
+print(
+    "Arquivo 1010:",
+    arquivo_1010.name if arquivo_1010 else "Não encontrado"
+)
+
+print(
+    "Arquivo 1013:",
+    arquivo_1013.name if arquivo_1013 else "Não encontrado"
+)
+
+print()
+
+
+# ============================================================
+# ABRIR EXCEL 1010 E 1013
+# ============================================================
+
+workbook_1010 = load_workbook(
     arquivo_1010,
     read_only=True,
     data_only=True
-).active
+)
 
-planilha_1013 = load_workbook(
+planilha_1010 = workbook_1010.active
+
+
+workbook_1013 = load_workbook(
     arquivo_1013,
     read_only=True,
     data_only=True
-).active
+)
+
+planilha_1013 = workbook_1013.active
+
 
 print("Estrutura do arquivo 1010:")
 print(f"Linhas: {planilha_1010.max_row}")
@@ -108,7 +153,9 @@ print()
 
 print("Estrutura do arquivo 1013:")
 print(f"Linhas: {planilha_1013.max_row}")
-print(f"Colunas: {planilha_1013.max_column}")    
+print(f"Colunas: {planilha_1013.max_column}")
+
+
 # ============================================================
 # CONFIGURAÇÃO DO EXCEL FINAL
 # ============================================================
@@ -141,22 +188,159 @@ COLUNAS_FINAIS = [
     "Mensagem"
 ]
 
+
 # ============================================================
 # CRIA RELATORIO SEG
 # ============================================================
+
+LOTES_HISTORICOS_CACHE = {}
+
+
+def registro_1010_deve_ser_incluido(linha):
+
+    tipo_documento = str(linha[7]).strip()
+    origem = str(linha[8]).strip().upper()
+
+    return not (
+        tipo_documento == "79"
+        and origem != "PGBL"
+    )
+
+
+def obter_lotes_historicos(descricao):
+
+    if descricao in LOTES_HISTORICOS_CACHE:
+        return LOTES_HISTORICOS_CACHE[descricao]
+
+    lotes = set()
+    pasta_tipo = pasta_manha / descricao
+
+    arquivos_historicos = []
+
+    if descricao == "DEVOLUÇÃO IS":
+        arquivos_historicos.extend(
+            pasta_manha.glob("RELATORIO SEG *.xlsx")
+        )
+
+    if pasta_tipo.exists():
+        arquivos_historicos.extend(
+            pasta_tipo.rglob("*.xlsx")
+        )
+
+    for arquivo in arquivos_historicos:
+
+        workbook = None
+
+        try:
+
+            workbook = load_workbook(
+                arquivo,
+                read_only=True,
+                data_only=True
+            )
+
+            for planilha in workbook.worksheets:
+
+                if descricao == "DEVOLUÇÃO IS":
+                    linhas = planilha.iter_rows(
+                        min_row=2,
+                        min_col=9,
+                        max_col=15,
+                        values_only=True
+                    )
+
+                    for linha in linhas:
+                        tipo_documento = str(linha[0]).strip()
+                        origem = str(linha[1]).strip().upper()
+                        lote = str(linha[6]).strip()
+
+                        if (
+                            lote
+                            and (
+                                tipo_documento != "79"
+                                or origem == "PGBL"
+                            )
+                        ):
+                            lotes.add(lote)
+                else:
+                    for linha in planilha.iter_rows(
+                        min_row=2,
+                        min_col=15,
+                        max_col=15,
+                        values_only=True
+                    ):
+
+                        if linha[0] is not None:
+                            lote = str(linha[0]).strip()
+
+                            if lote:
+                                lotes.add(lote)
+
+        except Exception:
+            continue
+
+        finally:
+
+            if workbook is not None:
+                workbook.close()
+
+    LOTES_HISTORICOS_CACHE[descricao] = lotes
+    return lotes
+
+
+def lote_eh_novo(lote, tipo_documento, empresa):
+
+    tipo_documento = str(tipo_documento).strip()
+    lote = str(lote).strip()
+
+    if empresa == "1010":
+
+        descricoes = {
+            "56": "PORTABILIDADE IS",
+            "62": "RESGATE IS",
+            "63": "RENDA IS",
+            "65": "DEVOLUÇÃO IS",
+            "79": "DEVOLUÇÃO IS"
+        }
+
+    else:
+
+        descricoes = {
+            "56": "PORTABILIDADE RG",
+            "62": "RESGATE RG",
+            "63": "RENDA RG",
+            "65": "DEVOLUÇÃO RG"
+        }
+
+    descricao = descricoes.get(tipo_documento)
+
+    if descricao is None:
+        return True
+
+    return lote not in obter_lotes_historicos(descricao)
+
 novo_arquivo = Workbook()
+
 nova_planilha = novo_arquivo.active
 nova_planilha.title = "RESUMO"
 
+
 # CABEÇALHO
-for coluna, titulo in enumerate(COLUNAS_FINAIS, start=1):
+
+for coluna, titulo in enumerate(
+    COLUNAS_FINAIS,
+    start=1
+):
+
     nova_planilha.cell(
         row=1,
         column=coluna,
         value=titulo
     )
 
+
 # COPIAR DADOS DO EXCEL BRUTO
+
 linha_destino = 2
 
 for linha in planilha_1010.iter_rows(
@@ -165,16 +349,36 @@ for linha in planilha_1010.iter_rows(
     max_col=26,
     values_only=True
 ):
-    for coluna_destino, valor in enumerate(linha, start=1):
+
+    if not registro_1010_deve_ser_incluido(linha):
+        continue
+
+    if not lote_eh_novo(
+        linha[13],
+        linha[7],
+        "1010"
+    ):
+        continue
+
+    for coluna_destino, valor in enumerate(
+        linha,
+        start=1
+    ):
 
         coluna_origem = coluna_destino + 1
 
-# TIRA O NEGATIVO DA COLUNA VALOR
+        # TIRA O NEGATIVO DA COLUNA VALOR
         if coluna_origem == 17 and isinstance(valor, str):
-            valor = valor.replace(".", "").replace(",", ".")
+
+            valor = (
+                valor
+                .replace(".", "")
+                .replace(",", ".")
+            )
+
             valor = abs(float(valor))
 
-# REMOVE ESPAÇOS COLUNA EMPRESA
+        # REMOVE ESPAÇOS COLUNA EMPRESA
         if coluna_origem == 25 and isinstance(valor, str):
             valor = valor.strip()
 
@@ -185,27 +389,49 @@ for linha in planilha_1010.iter_rows(
         )
 
     linha_destino += 1
-    
-# FORMATAR COLUNA VALOR COMO CONTABIL    
-for linha in range(2, linha_destino):
+
+
+# FORMATAR COLUNA VALOR COMO CONTÁBIL
+
+for linha in range(
+    2,
+    linha_destino
+):
+
     nova_planilha.cell(
         row=linha,
         column=16
-    ).number_format = '_-[$R$-pt-BR]* #,##0.00_-;_-[$R$-pt-BR]* -#,##0.00_-;_-[$R$-pt-BR]* "-"??_-;_-@_-'
-    
+    ).number_format = (
+        '_-[$R$-pt-BR]* #,##0.00_-;'
+        '_-[$R$-pt-BR]* -#,##0.00_-;'
+        '_-[$R$-pt-BR]* "-"??_-;'
+        '_-@_-'
+    )
+
+
 # ATIVAÇÃO DE FILTROS
-nova_planilha.auto_filter.ref = f"A1:Y{linha_destino - 1}"
+
+nova_planilha.auto_filter.ref = (
+    f"A1:Y{linha_destino - 1}"
+)
+
 
 # AJUSTAR FONTE
+
 for linha in nova_planilha.iter_rows():
+
     for celula in linha:
+
         celula.font = Font(
             name="Aptos Narrow",
             size=11
         )
 
+
 # AJUSTAR COLUNAS
+
 for coluna in range(3, 9):
+
     nova_planilha.column_dimensions[
         get_column_letter(coluna)
     ].width = 18
@@ -216,6 +442,7 @@ nova_planilha.column_dimensions["L"].width = 11
 nova_planilha.column_dimensions["M"].width = 11
 nova_planilha.column_dimensions["P"].width = 18
 
+
 ARQUIVO_DESTINO = (
     pasta_manha
     / f"RELATORIO SEG {HORARIO_RELATORIO}.xlsx"
@@ -223,26 +450,38 @@ ARQUIVO_DESTINO = (
 
 novo_arquivo.save(ARQUIVO_DESTINO)
 
+
 print()
 print("Arquivo 1010 criado:")
 print(ARQUIVO_DESTINO)
 
+
 # ============================================================
 # CRIA RELATORIO RG
 # ============================================================
+
 novo_arquivo_1013 = Workbook()
+
 nova_planilha_1013 = novo_arquivo_1013.active
 nova_planilha_1013.title = "RESUMO"
 
+
 # CABEÇALHO
-for coluna, titulo in enumerate(COLUNAS_FINAIS, start=1):
+
+for coluna, titulo in enumerate(
+    COLUNAS_FINAIS,
+    start=1
+):
+
     nova_planilha_1013.cell(
         row=1,
         column=coluna,
         value=titulo
     )
 
+
 # COPIAR DADOS DO EXCEL BRUTO
+
 linha_destino_1013 = 2
 
 for linha in planilha_1013.iter_rows(
@@ -251,16 +490,33 @@ for linha in planilha_1013.iter_rows(
     max_col=26,
     values_only=True
 ):
-    for coluna_destino, valor in enumerate(linha, start=1):
+
+    if not lote_eh_novo(
+        linha[13],
+        linha[7],
+        "1013"
+    ):
+        continue
+
+    for coluna_destino, valor in enumerate(
+        linha,
+        start=1
+    ):
 
         coluna_origem = coluna_destino + 1
 
-# TIRA O NEGATIVO DA COLUNA VALOR
+        # TIRA O NEGATIVO DA COLUNA VALOR
         if coluna_origem == 17 and isinstance(valor, str):
-            valor = valor.replace(".", "").replace(",", ".")
+
+            valor = (
+                valor
+                .replace(".", "")
+                .replace(",", ".")
+            )
+
             valor = abs(float(valor))
 
-# REMOVE ESPAÇOS COLUNA EMPRESA
+        # REMOVE ESPAÇOS COLUNA EMPRESA
         if coluna_origem == 25 and isinstance(valor, str):
             valor = valor.strip()
 
@@ -272,13 +528,24 @@ for linha in planilha_1013.iter_rows(
 
     linha_destino_1013 += 1
 
-# FORMATAR COLUNA VALOR COMO CONTABIL   
 
-for linha in range(2, linha_destino_1013):
+# FORMATAR COLUNA VALOR COMO CONTÁBIL
+
+for linha in range(
+    2,
+    linha_destino_1013
+):
+
     nova_planilha_1013.cell(
         row=linha,
         column=16
-    ).number_format = '_-[$R$-pt-BR]* #,##0.00_-;_-[$R$-pt-BR]* -#,##0.00_-;_-[$R$-pt-BR]* "-"??_-;_-@_-'
+    ).number_format = (
+        '_-[$R$-pt-BR]* #,##0.00_-;'
+        '_-[$R$-pt-BR]* -#,##0.00_-;'
+        '_-[$R$-pt-BR]* "-"??_-;'
+        '_-@_-'
+    )
+
 
 # ATIVAÇÃO DE FILTROS
 
@@ -286,18 +553,23 @@ nova_planilha_1013.auto_filter.ref = (
     f"A1:Y{linha_destino_1013 - 1}"
 )
 
+
 # AJUSTAR FONTE
 
 for linha in nova_planilha_1013.iter_rows():
+
     for celula in linha:
+
         celula.font = Font(
             name="Aptos Narrow",
             size=11
         )
 
+
 # AJUSTAR COLUNAS
 
 for coluna in range(3, 9):
+
     nova_planilha_1013.column_dimensions[
         get_column_letter(coluna)
     ].width = 18
@@ -308,20 +580,26 @@ nova_planilha_1013.column_dimensions["L"].width = 11
 nova_planilha_1013.column_dimensions["M"].width = 11
 nova_planilha_1013.column_dimensions["P"].width = 18
 
+
 # SALVAR
+
 ARQUIVO_DESTINO_1013 = (
     pasta_manha
     / f"RELATORIO RG {HORARIO_RELATORIO}.xlsx"
 )
 
-novo_arquivo_1013.save(ARQUIVO_DESTINO_1013)
+novo_arquivo_1013.save(
+    ARQUIVO_DESTINO_1013
+)
+
 
 print()
 print("Arquivo 1013 criado:")
 print(ARQUIVO_DESTINO_1013)
 
+
 # ============================================================
-# TABELA DINAMICA 1010
+# TABELA DINAMICA
 # ============================================================
 
 def criar_tabela_dinamica(
@@ -334,16 +612,25 @@ def criar_tabela_dinamica(
     arquivo_excel = None
 
     try:
-        excel = win32.Dispatch("Excel.Application")
+
+        excel = win32.Dispatch(
+            "Excel.Application"
+        )
+
         excel.Visible = False
 
         arquivo_excel = excel.Workbooks.Open(
             str(caminho_arquivo)
         )
 
-        planilha_excel = arquivo_excel.Worksheets("RESUMO")
+        planilha_excel = (
+            arquivo_excel.Worksheets("RESUMO")
+        )
 
-        planilha_dinamica = arquivo_excel.Worksheets.Add()
+        planilha_dinamica = (
+            arquivo_excel.Worksheets.Add()
+        )
+
         planilha_dinamica.Name = nome_aba
 
         ultima_linha = planilha_excel.Cells(
@@ -376,30 +663,47 @@ def criar_tabela_dinamica(
             1
         )
 
-        tabela_dinamica = cache.CreatePivotTable(
-            TableDestination=destino,
-            TableName=nome_tabela
+        tabela_dinamica = (
+            cache.CreatePivotTable(
+                TableDestination=destino,
+                TableName=nome_tabela
+            )
         )
 
-        campo_lote = tabela_dinamica.PivotFields(
-            "N° Lote de Pagamento"
+        # CAMPO LOTE
+
+        campo_lote = (
+            tabela_dinamica.PivotFields(
+                "N° Lote de Pagamento"
+            )
         )
 
         campo_lote.Orientation = 1
 
-        campo_valor = tabela_dinamica.PivotFields(
-            "Valor"
+
+        # CAMPO VALOR
+
+        campo_valor = (
+            tabela_dinamica.PivotFields(
+                "Valor"
+            )
         )
 
         campo_valor.Orientation = 4
         campo_valor.Function = -4157
 
-        campo_documento = tabela_dinamica.PivotFields(
-            "Documento"
+
+        # CAMPO DOCUMENTO
+
+        campo_documento = (
+            tabela_dinamica.PivotFields(
+                "Documento"
+            )
         )
 
         campo_documento.Orientation = 4
         campo_documento.Function = -4112
+
 
         arquivo_excel.Save()
 
@@ -411,6 +715,7 @@ def criar_tabela_dinamica(
     finally:
 
         if arquivo_excel is not None:
+
             arquivo_excel.Close(
                 SaveChanges=False
             )
@@ -429,6 +734,7 @@ criar_tabela_dinamica(
     "TABELA DINAMICA GERAL"
 )
 
+
 # ============================================================
 # SEPARA POR TIPO 1010
 # ============================================================
@@ -440,7 +746,11 @@ tipo_62 = []
 tipo_63 = []
 tipo_65_79 = []
 
-for linha in range(2, planilha_separacao.max_row + 1):
+
+for linha in range(
+    2,
+    planilha_separacao.max_row + 1
+):
 
     tipo_documento = str(
         planilha_separacao.cell(
@@ -458,8 +768,20 @@ for linha in range(2, planilha_separacao.max_row + 1):
     elif tipo_documento == "63":
         tipo_63.append(linha)
 
-    elif tipo_documento in ("65", "79"):
+    elif tipo_documento == "65":
         tipo_65_79.append(linha)
+
+    elif tipo_documento == "79":
+        origem = str(
+            planilha_separacao.cell(
+                row=linha,
+                column=10
+            ).value
+        ).strip().upper()
+
+        if origem == "PGBL":
+            tipo_65_79.append(linha)
+
 
 print()
 print("SEPARAÇÃO 1010 POR TIPO DE DOCUMENTO")
@@ -484,6 +806,8 @@ def obter_lotes_ja_extraidos(descricao):
 
     for arquivo in pasta_tipo.rglob("*.xlsx"):
 
+        workbook = None
+
         try:
 
             workbook = load_workbook(
@@ -492,30 +816,56 @@ def obter_lotes_ja_extraidos(descricao):
                 data_only=True
             )
 
-            planilha = workbook.active
+            for planilha in workbook.worksheets:
 
-            for linha in planilha.iter_rows(
-                min_row=2,
-                min_col=15,
-                max_col=15,
-                values_only=True
-            ):
+                if descricao == "DEVOLUÇÃO IS":
+                    linhas = planilha.iter_rows(
+                        min_row=2,
+                        min_col=9,
+                        max_col=15,
+                        values_only=True
+                    )
 
-                lote = linha[0]
+                    for linha in linhas:
+                        tipo_documento = str(linha[0]).strip()
+                        origem = str(linha[1]).strip().upper()
+                        lote = str(linha[6]).strip()
 
-                if lote is not None:
+                        if (
+                            lote
+                            and (
+                                tipo_documento != "79"
+                                or origem == "PGBL"
+                            )
+                        ):
+                            lotes.add(lote)
+                else:
+                    for linha in planilha.iter_rows(
+                        min_row=2,
+                        min_col=15,
+                        max_col=15,
+                        values_only=True
+                    ):
 
-                    lote = str(lote).strip()
+                        lote = linha[0]
 
-                    if lote:
-                        lotes.add(lote)
+                        if lote is not None:
 
-            workbook.close()
+                            lote = str(lote).strip()
+
+                            if lote:
+                                lotes.add(lote)
 
         except Exception:
             continue
 
+        finally:
+
+            if workbook is not None:
+                workbook.close()
+
     return lotes
+
 
 # ============================================================
 # LIMITAR NOME DOS LOTES
@@ -523,14 +873,17 @@ def obter_lotes_ja_extraidos(descricao):
 
 LIMITE_CAMINHO = 240
 
+
 def montar_nomes_com_lotes(
     lotes,
     pasta_tipo,
     descricao
 ):
+
     lotes_visiveis = []
 
     for lote in lotes:
+
         candidato_lotes = " ".join(
             lotes_visiveis + [lote]
         )
@@ -555,9 +908,17 @@ def montar_nomes_com_lotes(
         lotes_visiveis.append(lote)
 
     if len(lotes_visiveis) < len(lotes):
-        lotes_nome = " ".join(lotes_visiveis) + "..."
+
+        lotes_nome = (
+            " ".join(lotes_visiveis)
+            + "..."
+        )
+
     else:
-        lotes_nome = " ".join(lotes_visiveis)
+
+        lotes_nome = " ".join(
+            lotes_visiveis
+        )
 
     nome_pasta = (
         f"LOTE {lotes_nome} - {descricao}"
@@ -577,18 +938,26 @@ def criar_arquivo_tipo(
 ):
 
     if not linhas:
+
         print(
             f"Nenhum registro encontrado para: "
             f"{descricao}"
         )
+
         return None
 
-    lotes_ja_extraidos = obter_lotes_ja_extraidos(
-        descricao
+
+    # VERIFICAR LOTES JÁ EXTRAÍDOS
+
+    lotes_ja_extraidos = (
+        obter_lotes_ja_extraidos(
+            descricao
+        )
     )
 
     linhas_novas = []
     lotes = []
+
 
     for linha in linhas:
 
@@ -607,6 +976,7 @@ def criar_arquivo_tipo(
         if lote not in lotes:
             lotes.append(lote)
 
+
     if not linhas_novas:
 
         print(
@@ -616,38 +986,59 @@ def criar_arquivo_tipo(
 
         return None
 
-# CRIAR PASTA DO TIPO
-    pasta_tipo = pasta_manha / descricao
+
+    # CRIAR PASTA DO TIPO
+
+    pasta_tipo = (
+        pasta_manha
+        / descricao
+    )
+
     pasta_tipo.mkdir(
-    parents=True,
-    exist_ok=True
-)
+        parents=True,
+        exist_ok=True
+    )
 
-# MONTAR NOMES DA PASTA E DO ARQUIVO
-    nome_pasta, nome_arquivo = montar_nomes_com_lotes(
-    lotes,
-    pasta_tipo,
-    descricao
-)
 
-# CRIAR PASTA DO RESULTADO
-    pasta_resultado = pasta_tipo / nome_pasta
+    # MONTAR NOMES DA PASTA E DO ARQUIVO
+
+    nome_pasta, nome_arquivo = (
+        montar_nomes_com_lotes(
+            lotes,
+            pasta_tipo,
+            descricao
+        )
+    )
+
+
+    # CRIAR PASTA DO RESULTADO
+
+    pasta_resultado = (
+        pasta_tipo
+        / nome_pasta
+    )
+
     pasta_resultado.mkdir(
-    parents=True,
-    exist_ok=True
-)
+        parents=True,
+        exist_ok=True
+    )
 
-# CAMINHO DO ARQUIVO
+
+    # CAMINHO DO ARQUIVO
+
     caminho_arquivo = (
-    pasta_resultado / nome_arquivo
-)    
+        pasta_resultado
+        / nome_arquivo
+    )
 
-# CRIAR EXCEL
+
+    # CRIAR EXCEL
 
     arquivo = Workbook()
 
     planilha = arquivo.active
     planilha.title = "RESUMO"
+
 
     # COPIAR CABEÇALHO
 
@@ -664,6 +1055,7 @@ def criar_arquivo_tipo(
                 column=coluna
             ).value
         )
+
 
     # COPIAR DOCUMENTOS NOVOS
 
@@ -687,6 +1079,7 @@ def criar_arquivo_tipo(
 
         linha_destino += 1
 
+
     # FORMATAR COLUNA VALOR COMO CONTÁBIL
 
     for linha in range(
@@ -704,11 +1097,13 @@ def criar_arquivo_tipo(
             '_-@_-'
         )
 
+
     # ATIVAÇÃO DE FILTROS
 
     planilha.auto_filter.ref = (
         f"A1:Y{linha_destino - 1}"
     )
+
 
     # AJUSTAR FONTE
 
@@ -720,6 +1115,7 @@ def criar_arquivo_tipo(
                 name="Aptos Narrow",
                 size=11
             )
+
 
     # AJUSTAR COLUNAS
 
@@ -735,18 +1131,25 @@ def criar_arquivo_tipo(
     planilha.column_dimensions["M"].width = 11
     planilha.column_dimensions["P"].width = 18
 
+
+    # SALVAR E FECHAR
+
     arquivo.save(caminho_arquivo)
     arquivo.close()
 
+
     print()
-    print(f"{descricao}")
+    print(descricao)
+
     print(
         f"Lotes encontrados: "
         f"{' '.join(lotes)}"
     )
+
     print(
         f"Documentos: {len(linhas_novas)}"
     )
+
     print("Arquivo criado:")
     print(caminho_arquivo)
 
@@ -835,6 +1238,7 @@ tipo_62_1013 = []
 tipo_63_1013 = []
 tipo_65_1013 = []
 
+
 for linha in range(
     2,
     planilha_separacao_1013.max_row + 1
@@ -859,17 +1263,22 @@ for linha in range(
     elif tipo_documento == "65":
         tipo_65_1013.append(linha)
 
+
 print()
 print("SEPARAÇÃO 1013 POR TIPO DE DOCUMENTO")
+
 print(
     f"Tipo 56: {len(tipo_56_1013)} linhas"
 )
+
 print(
     f"Tipo 62: {len(tipo_62_1013)} linhas"
 )
+
 print(
     f"Tipo 63: {len(tipo_63_1013)} linhas"
 )
+
 print(
     f"Tipo 65: {len(tipo_65_1013)} linhas"
 )
@@ -894,12 +1303,18 @@ def criar_arquivo_tipo_1013(
 
         return None
 
-    lotes_ja_extraidos = obter_lotes_ja_extraidos(
-        descricao
+
+    # VERIFICAR LOTES JÁ EXTRAÍDOS
+
+    lotes_ja_extraidos = (
+        obter_lotes_ja_extraidos(
+            descricao
+        )
     )
 
     linhas_novas = []
     lotes = []
+
 
     for linha in linhas:
 
@@ -918,6 +1333,7 @@ def criar_arquivo_tipo_1013(
         if lote not in lotes:
             lotes.append(lote)
 
+
     if not linhas_novas:
 
         print(
@@ -927,39 +1343,51 @@ def criar_arquivo_tipo_1013(
 
         return None
 
-    # MONTAR NOME DO ARQUIVO
-
-    lotes_nome = " ".join(lotes)
-
-    nome_arquivo = (
-        f"LOTE {lotes_nome} - {descricao}.xlsx"
-    )
 
     # CRIAR PASTA DO TIPO
 
-    pasta_tipo = pasta_manha / descricao
+    pasta_tipo = (
+        pasta_manha
+        / descricao
+    )
 
     pasta_tipo.mkdir(
         parents=True,
         exist_ok=True
     )
 
-    # CRIAR PASTA DO RESULTADO
 
-    nome_pasta = (
-        f"LOTE {lotes_nome} - {descricao}"
+    # MONTAR NOMES DA PASTA E DO ARQUIVO
+
+    nome_pasta, nome_arquivo = (
+        montar_nomes_com_lotes(
+            lotes,
+            pasta_tipo,
+            descricao
+        )
     )
 
-    pasta_resultado = pasta_tipo / nome_pasta
+
+    # CRIAR PASTA DO RESULTADO
+
+    pasta_resultado = (
+        pasta_tipo
+        / nome_pasta
+    )
 
     pasta_resultado.mkdir(
         parents=True,
         exist_ok=True
     )
 
+
+    # CAMINHO DO ARQUIVO
+
     caminho_arquivo = (
-        pasta_resultado / nome_arquivo
+        pasta_resultado
+        / nome_arquivo
     )
+
 
     # CRIAR EXCEL
 
@@ -967,6 +1395,7 @@ def criar_arquivo_tipo_1013(
 
     planilha = arquivo.active
     planilha.title = "RESUMO"
+
 
     # COPIAR CABEÇALHO
 
@@ -983,6 +1412,7 @@ def criar_arquivo_tipo_1013(
                 column=coluna
             ).value
         )
+
 
     # COPIAR DOCUMENTOS NOVOS
 
@@ -1006,6 +1436,7 @@ def criar_arquivo_tipo_1013(
 
         linha_destino += 1
 
+
     # FORMATAR COLUNA VALOR COMO CONTÁBIL
 
     for linha in range(
@@ -1023,11 +1454,13 @@ def criar_arquivo_tipo_1013(
             '_-@_-'
         )
 
+
     # ATIVAÇÃO DE FILTROS
 
     planilha.auto_filter.ref = (
         f"A1:Y{linha_destino - 1}"
     )
+
 
     # AJUSTAR FONTE
 
@@ -1039,6 +1472,7 @@ def criar_arquivo_tipo_1013(
                 name="Aptos Narrow",
                 size=11
             )
+
 
     # AJUSTAR COLUNAS
 
@@ -1054,17 +1488,25 @@ def criar_arquivo_tipo_1013(
     planilha.column_dimensions["M"].width = 11
     planilha.column_dimensions["P"].width = 18
 
+
+    # SALVAR E FECHAR
+
     arquivo.save(caminho_arquivo)
+    arquivo.close()
+
 
     print()
-    print(f"{descricao}")
+    print(descricao)
+
     print(
         f"Lotes encontrados: "
         f"{' '.join(lotes)}"
     )
+
     print(
         f"Documentos: {len(linhas_novas)}"
     )
+
     print("Arquivo criado:")
     print(caminho_arquivo)
 
@@ -1129,3 +1571,22 @@ if arquivo_devolucao_rg:
         arquivo_devolucao_rg,
         "TabelaDinamicaDevolucaoRG"
     )
+
+
+# ============================================================
+# FECHAR ARQUIVOS DE LEITURA
+# ============================================================
+
+workbook_1010.close()
+workbook_1013.close()
+
+
+# ============================================================
+# FECHAR ARQUIVOS CRIADOS
+# ============================================================
+
+novo_arquivo.close()
+novo_arquivo_1013.close()
+
+print()
+print("PROCESSO DE CONFIGURAÇÃO DOS EXCELS FINALIZADO.")
