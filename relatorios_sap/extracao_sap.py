@@ -31,7 +31,7 @@ MESES = [
     "12 - DEZEMBRO"
 ]
 
-data_atual = date(2026, 9, 24)
+data_atual = date(2026, 9, 26)
 pasta_mes = MESES[data_atual.month - 1]
 data_formatada = data_atual.strftime("%d.%m.%Y")
 
@@ -43,8 +43,8 @@ pasta_manha = (
     / "MANHÃ"
 )
 
-DATA_INICIAL = "22.09.2026"
-DATA_FINAL = "23.09.2026"
+DATA_INICIAL = "23.09.2026"
+DATA_FINAL = "24.09.2026"
 
 EMPRESA = "1010"
 
