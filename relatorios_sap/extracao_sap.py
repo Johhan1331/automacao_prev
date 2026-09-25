@@ -2,7 +2,10 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import (
+    StaleElementReferenceException,
+    TimeoutException,
+)
 import time
 import os
 from pathlib import Path
@@ -772,14 +775,22 @@ print("Relatório 1013 executado!")
 # EXPORTAR EXCEL - EMPRESA 1013
 # ============================================================
 
-botao_visualizacao = wait.until(
-    EC.element_to_be_clickable(
-        (
-            By.CSS_SELECTOR,
-            'div[role="button"][title="Visualização (Ctrl+Shift+F10)"]'
+try:
+    botao_visualizacao = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable(
+            (
+                By.CSS_SELECTOR,
+                'div[role="button"][title="Visualização (Ctrl+Shift+F10)"]'
+            )
         )
     )
-)
+except TimeoutException:
+    print(
+        "Botão de visualização não apareceu após executar o relatório 1013. "
+        "Continuando sem os dados dessa empresa."
+    )
+    driver.quit()
+    raise SystemExit(0)
 
 botao_visualizacao.click()
 

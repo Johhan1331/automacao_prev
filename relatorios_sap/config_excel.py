@@ -136,11 +136,15 @@ workbook_1010 = load_workbook(
 planilha_1010 = workbook_1010.active
 
 
-workbook_1013 = load_workbook(
-    arquivo_1013,
-    read_only=True,
-    data_only=True
-)
+if arquivo_1013:
+    workbook_1013 = load_workbook(
+        arquivo_1013,
+        read_only=True,
+        data_only=True
+    )
+else:
+    print("Arquivo 1013 ausente. Continuando sem dados dessa empresa.")
+    workbook_1013 = Workbook()
 
 planilha_1013 = workbook_1013.active
 
@@ -484,11 +488,15 @@ for coluna, titulo in enumerate(
 
 linha_destino_1013 = 2
 
-for linha in planilha_1013.iter_rows(
-    min_row=4,
-    min_col=2,
-    max_col=26,
-    values_only=True
+for linha in (
+    planilha_1013.iter_rows(
+        min_row=4,
+        min_col=2,
+        max_col=26,
+        values_only=True
+    )
+    if arquivo_1013
+    else ()
 ):
 
     if not lote_eh_novo(
@@ -1220,11 +1228,14 @@ if arquivo_devolucao_is:
 # TABELA DINAMICA 1013
 # ============================================================
 
-criar_tabela_dinamica(
-    ARQUIVO_DESTINO_1013,
-    "TabelaDinamica1013",
-    "TABELA DINAMICA GERAL"
-)
+if arquivo_1013:
+    criar_tabela_dinamica(
+        ARQUIVO_DESTINO_1013,
+        "TabelaDinamica1013",
+        "TABELA DINAMICA GERAL"
+    )
+else:
+    print("Sem arquivo 1013: tabela dinâmica RG não será criada.")
 
 
 # ============================================================
