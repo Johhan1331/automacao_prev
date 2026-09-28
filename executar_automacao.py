@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 import logging
 import os
 from pathlib import Path
@@ -6,11 +6,10 @@ import subprocess
 import sys
 import threading
 import tkinter as tk
-import unicodedata
 from tkinter import messagebox, ttk
 
 
-PASTA_RAIZ = Path(r"X:\Comum-PagamentosDiarios")
+PASTA_RAIZ = Path(r"X:\Comum-PagamentosDiarios\AUTOMACAO_TESTE")
 PASTA_PROJETO = Path(__file__).resolve().parent
 PASTA_RELATORIOS = PASTA_PROJETO / "relatorios_sap"
 PASTA_DIRETORIO = PASTA_PROJETO / "manipular_diretorio"
@@ -42,6 +41,7 @@ class Aplicacao:
 
         self.email = tk.StringVar(value=SUFIXO_EMAIL)
         self.senha = tk.StringVar()
+        self.senha_visivel = False
         self.data_inicial = tk.StringVar()
         self.data_final = tk.StringVar()
         self.status = tk.StringVar(value="Preencha os dados para iniciar.")
@@ -136,24 +136,38 @@ class Aplicacao:
             text="Senha",
             style="Campo.TLabel"
         ).grid(row=4, column=0, columnspan=2, pady=(0, 2))
-        self.senha_entry = ttk.Entry(
-            principal,
-            textvariable=self.senha,
-            width=32,
-            show="*",
-            style="Campo.TEntry"
-        )
-        self.senha_entry.grid(
+        senha_frame = ttk.Frame(principal, style="Tela.TFrame")
+        senha_frame.grid(
             row=5,
             column=0,
             columnspan=2,
             pady=(0, 10)
         )
 
+        self.senha_entry = ttk.Entry(
+            senha_frame,
+            textvariable=self.senha,
+            width=32,
+            show="*",
+            style="Campo.TEntry"
+        )
+        self.senha_entry.grid(row=0, column=1, sticky="w")
+
+        self.botao_senha = ttk.Button(
+            senha_frame,
+            text="👁",
+            command=self._alternar_visibilidade_senha,
+            width=3,
+            style="Acao.TButton"
+        )
+        self.botao_senha.grid(row=0, column=2, padx=(6, 0))
+        senha_frame.columnconfigure(
+            0,
+            minsize=self.botao_senha.winfo_reqwidth() + 6
+        )
+
         datas = ttk.Frame(principal, style="Tela.TFrame")
-        datas.grid(row=6, column=0, columnspan=2, sticky="ew")
-        datas.columnconfigure(0, weight=1)
-        datas.columnconfigure(1, weight=1)
+        datas.grid(row=6, column=0, columnspan=2)
 
         ttk.Label(
             datas,
@@ -168,26 +182,24 @@ class Aplicacao:
         self.data_inicial_entry = ttk.Entry(
             datas,
             textvariable=self.data_inicial,
-            width=12,
+            width=18,
             style="Campo.TEntry"
         )
         self.data_inicial_entry.grid(
             row=1,
             column=0,
-            sticky="ew",
             padx=(0, 8),
             pady=(2, 0)
         )
         self.data_final_entry = ttk.Entry(
             datas,
             textvariable=self.data_final,
-            width=12,
+            width=18,
             style="Campo.TEntry"
         )
         self.data_final_entry.grid(
             row=1,
             column=1,
-            sticky="ew",
             padx=(8, 0),
             pady=(2, 0)
         )
@@ -241,6 +253,12 @@ class Aplicacao:
         self.email.set(parte_usuario + SUFIXO_EMAIL)
         self.email_entry.icursor(len(parte_usuario))
 
+    def _alternar_visibilidade_senha(self):
+        self.senha_visivel = not self.senha_visivel
+        self.senha_entry.configure(
+            show="" if self.senha_visivel else "*"
+        )
+
     def _validar(self):
         parte_usuario = self.email.get().removesuffix(SUFIXO_EMAIL).strip()
         if not parte_usuario:
@@ -277,12 +295,7 @@ class Aplicacao:
             raise ValueError("A data inicial não pode ser posterior à data final.")
 
     def _registrar(self, mensagem):
-        texto = "".join(
-            caractere
-            for caractere in unicodedata.normalize("NFKD", mensagem)
-            if not unicodedata.combining(caractere)
-        )
-        texto = texto.encode("ascii", "ignore").decode("ascii").rstrip()
+        texto = mensagem.rstrip()
         if not texto:
             return
 
@@ -390,13 +403,13 @@ class Aplicacao:
             )
 
         self._registrar(f"Concluído: {script.name}")
+        return saida
 
     def _executar(self):
         hoje = date.today()
-        data_pasta = hoje + timedelta(days=1)
-        pasta_raiz_teste = PASTA_RAIZ / "AUTOMACAO_TESTE"
+        data_pasta = hoje
         pasta_manha = (
-            pasta_raiz_teste
+            PASTA_RAIZ
             / str(data_pasta.year)
             / MESES[data_pasta.month - 1]
             / data_pasta.strftime("%d.%m.%Y")
@@ -410,10 +423,11 @@ class Aplicacao:
             "AUTOMACAO_SENHA": self.senha.get(),
             "AUTOMACAO_DATA_INICIAL": self.data_inicial.get().strip(),
             "AUTOMACAO_DATA_FINAL": self.data_final.get().strip(),
-            "AUTOMACAO_PASTA_RAIZ": str(pasta_raiz_teste),
+            "AUTOMACAO_PASTA_RAIZ": str(PASTA_RAIZ),
             "AUTOMACAO_DATA_PASTA": data_pasta.isoformat(),
             "AUTOMACAO_PASTA_ORIGEM": str(PASTA_RAIZ),
         })
+        ambiente["PYTHONIOENCODING"] = "utf-8"
 
         etapas = [
             PASTA_DIRETORIO / "abrir_pasta.py",
@@ -424,8 +438,25 @@ class Aplicacao:
 
         try:
             self._registrar("Início da automação")
+            empresas_sem_dados = set()
             for etapa in etapas:
-                self._executar_script(etapa, ambiente)
+                if (
+                    etapa.name == "config_excel.py"
+                    and {"1010", "1013"}.issubset(empresas_sem_dados)
+                ):
+                    self._registrar(
+                        "SEM DADOS PARA ICATU E RIO GRANDE; "
+                        "ENCERRANDO A AUTOMAÇÃO SEM EXECUTAR CONFIG_EXCEL.PY."
+                    )
+                    continue
+
+                saida = self._executar_script(etapa, ambiente)
+                if etapa.name == "extracao_sap.py":
+                    texto_saida = "".join(saida)
+                    for empresa in ("1010", "1013"):
+                        if f"[SEM DADOS] Empresa {empresa}:" in texto_saida:
+                            empresas_sem_dados.add(empresa)
+
             self._registrar("AUTOMAÇÃO FINALIZADA COM SUCESSO")
             self.janela.after(0, self.status.set, "Automação finalizada com sucesso.")
         except AutomacaoCancelada:

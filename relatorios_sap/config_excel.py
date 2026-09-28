@@ -33,7 +33,7 @@ MESES = [
 # DATA DA PASTA
 # ============================================================
 
-# DATA TEMPORÁRIA PARA TESTES
+# DATA DA PASTA
 data_atual = date.fromisoformat(os.environ["AUTOMACAO_DATA_PASTA"])
 
 pasta_mes = MESES[data_atual.month - 1]
@@ -127,11 +127,15 @@ print()
 # ABRIR EXCEL 1010 E 1013
 # ============================================================
 
-workbook_1010 = load_workbook(
-    arquivo_1010,
-    read_only=True,
-    data_only=True
-)
+if arquivo_1010:
+    workbook_1010 = load_workbook(
+        arquivo_1010,
+        read_only=True,
+        data_only=True
+    )
+else:
+    print("[SEM DADOS] Empresa 1010: arquivo de extração não encontrado.")
+    workbook_1010 = Workbook()
 
 planilha_1010 = workbook_1010.active
 
@@ -143,7 +147,7 @@ if arquivo_1013:
         data_only=True
     )
 else:
-    print("Arquivo 1013 ausente. Continuando sem dados dessa empresa.")
+    print("[SEM DADOS] Empresa 1013: arquivo de extração não encontrado.")
     workbook_1013 = Workbook()
 
 planilha_1013 = workbook_1013.active
@@ -635,16 +639,23 @@ def criar_tabela_dinamica(
             arquivo_excel.Worksheets("RESUMO")
         )
 
+        ultima_linha = planilha_excel.Cells(
+            planilha_excel.Rows.Count,
+            16
+        ).End(-4162).Row
+
+        if ultima_linha < 2:
+            print(
+                f"[SEM DADOS] {caminho_arquivo}: "
+                "tabela dinâmica não será criada."
+            )
+            return
+
         planilha_dinamica = (
             arquivo_excel.Worksheets.Add()
         )
 
         planilha_dinamica.Name = nome_aba
-
-        ultima_linha = planilha_excel.Cells(
-            planilha_excel.Rows.Count,
-            16
-        ).End(-4162).Row
 
         linha_dinamica = 2
 

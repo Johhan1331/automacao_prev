@@ -63,7 +63,7 @@ Em `DEVOLUÇÃO IS`, entram documentos `65` e documentos `79` somente quando a c
 
 Não é necessário apagar manualmente arquivos ou pastas de `DEVOLUÇÃO IS`.
 
-Um log sem acentos é salvo dentro da pasta `MANHÃ` da execução.
+Um log em UTF-8, preservando acentos, é salvo dentro da pasta `MANHÃ` da execução.
 
 ## Gerar executável
 

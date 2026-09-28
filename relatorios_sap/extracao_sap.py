@@ -403,95 +403,96 @@ print("Relatório executado!")
 # EXPORTAR EXCEL - EMPRESA 1010
 # ============================================================
 
-botao_visualizacao = wait.until(
-    EC.element_to_be_clickable(
-        (
-            By.CSS_SELECTOR,
-            'div[role="button"][title="Visualização (Ctrl+Shift+F10)"]'
-        )
-    )
-)
-
-botao_visualizacao.click()
-print("Modo de exibição aberto!")
-
-time.sleep(2)
-while True:
-
-    try:
-
-        botao_file_local = wait.until(
-            EC.element_to_be_clickable(
-                (
-                    By.CSS_SELECTOR,
-                    'div[role="button"][title="File local... (Ctrl+Shift+F9)"]'
-                )
+def exportar_relatorio_1010():
+    botao_visualizacao = WebDriverWait(driver, 5).until(
+        EC.element_to_be_clickable(
+            (
+                By.CSS_SELECTOR,
+                'div[role="button"][title="Visualização (Ctrl+Shift+F10)"]'
             )
         )
-
-        botao_file_local.click()
-
-        break
-
-    except StaleElementReferenceException:
-
-        print(
-            "SAP atualizou a barra. "
-            "Localizando File local novamente..."
-        )
-
-
-print("Menu de exportação aberto!")
-time.sleep(1)
-
-planilha = wait.until(
-    EC.element_to_be_clickable(
-        (
-            By.CSS_SELECTOR,
-            'span[role="radio"][aria-label="Planilha eletrônica"]'
-        )
     )
-)
+    botao_visualizacao.click()
+    print("Modo de exibição aberto!")
 
-planilha.click()
-print("Planilha eletrônica selecionada!")
+    time.sleep(2)
+    while True:
+
+        try:
+
+            botao_file_local = wait.until(
+                EC.element_to_be_clickable(
+                    (
+                        By.CSS_SELECTOR,
+                        'div[role="button"][title="File local... (Ctrl+Shift+F9)"]'
+                    )
+                )
+            )
+            botao_file_local.click()
+
+            break
+
+        except StaleElementReferenceException:
+
+            print(
+                "SAP atualizou a barra. "
+                "Localizando File local novamente..."
+            )
 
 
-botao_avancar_exportacao = wait.until(
-    EC.element_to_be_clickable(
-        (
-            By.CSS_SELECTOR,
-            'div[role="button"][title="Avançar (Entrada)"]'
-        )
-    )
-)
+    print("Menu de exportação aberto!")
+    time.sleep(1)
 
-botao_avancar_exportacao.click()
-print("Avançar clicado!")
-
-
-botao_exportar = wait.until(
-    EC.element_to_be_clickable(
-        (
-            By.CSS_SELECTOR,
-            'div[role="button"][title="Exportar dados (Shift+F8)"]'
+    planilha = wait.until(
+        EC.element_to_be_clickable(
+            (
+                By.CSS_SELECTOR,
+                'span[role="radio"][aria-label="Planilha eletrônica"]'
+            )
         )
     )
-)
+    planilha.click()
+    print("Planilha eletrônica selecionada!")
 
-botao_exportar.click()
-print("Exportar para... clicado!")
-
-
-botao_ok = wait.until(
-    EC.element_to_be_clickable(
-        (By.ID, "UpDownDialogChoose")
+    botao_avancar_exportacao = wait.until(
+        EC.element_to_be_clickable(
+            (
+                By.CSS_SELECTOR,
+                'div[role="button"][title="Avançar (Entrada)"]'
+            )
+        )
     )
-)
+    botao_avancar_exportacao.click()
+    print("Avançar clicado!")
 
-botao_ok.click()
-print("OK clicado!")
-time.sleep(3)
+    botao_exportar = wait.until(
+        EC.element_to_be_clickable(
+            (
+                By.CSS_SELECTOR,
+                'div[role="button"][title="Exportar dados (Shift+F8)"]'
+            )
+        )
+    )
+    botao_exportar.click()
+    print("Exportar para... clicado!")
+
+    botao_ok = wait.until(
+        EC.element_to_be_clickable(
+            (By.ID, "UpDownDialogChoose")
+        )
+    )
+    botao_ok.click()
+    print("OK clicado!")
+    time.sleep(3)
+
+
+try:
+    exportar_relatorio_1010()
+except TimeoutException:
+    print(
+        "[SEM DADOS] Empresa 1010: SAP não apresentou resultados; "
+        "seguindo sem exportação."
+    )
 
 # ============================================================
 # VOLTAR PARA HOME
@@ -776,7 +777,7 @@ print("Relatório 1013 executado!")
 # ============================================================
 
 try:
-    botao_visualizacao = WebDriverWait(driver, 10).until(
+    botao_visualizacao = WebDriverWait(driver, 5).until(
         EC.element_to_be_clickable(
             (
                 By.CSS_SELECTOR,
@@ -786,8 +787,8 @@ try:
     )
 except TimeoutException:
     print(
-        "Botão de visualização não apareceu após executar o relatório 1013. "
-        "Continuando sem os dados dessa empresa."
+        "[SEM DADOS] Empresa 1013: SAP não apresentou resultados; "
+        "seguindo sem exportação."
     )
     driver.quit()
     raise SystemExit(0)
