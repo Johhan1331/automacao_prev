@@ -45,9 +45,6 @@ pasta_manha = (
     / "MANHÃ"
 )
 
-EMPRESA = "1010"
-
-
 # ============================================================
 # INFORMAÇÕES RECEBIDAS PELA APLICAÇÃO PRINCIPAL
 # ============================================================
@@ -56,6 +53,15 @@ email = os.environ["AUTOMACAO_EMAIL"]
 senha = os.environ["AUTOMACAO_SENHA"]
 DATA_INICIAL = os.environ["AUTOMACAO_DATA_INICIAL"]
 DATA_FINAL = os.environ["AUTOMACAO_DATA_FINAL"]
+EMPRESAS = {
+    empresa.strip()
+    for empresa in os.environ.get(
+        "AUTOMACAO_EMPRESAS",
+        "1010,1013"
+    ).split(",")
+    if empresa.strip()
+}
+EMPRESA = "1013" if EMPRESAS == {"1013"} else "1010"
 
 
 # ============================================================
@@ -323,12 +329,11 @@ botao_selecao_multipla = wait.until(
 
 botao_selecao_multipla.click()
 
-tipos_documento = [
-    "62",
-    "65",
-    "79",
-    "63"
-]
+tipos_documento = (
+    ["62", "65", "79", "63"]
+    if EMPRESA == "1010"
+    else ["62", "65", "63"]
+)
 
 
 for i, valor in enumerate(tipos_documento):
@@ -529,7 +534,7 @@ def exportar_relatorio_1010():
     print("OK clicado!")
     arquivo_exportado = aguardar_download_exportacao(
         arquivos_anteriores,
-        "1010"
+        EMPRESA
     )
     print(f"Download concluído: {arquivo_exportado.name}")
 
@@ -538,9 +543,17 @@ try:
     exportar_relatorio_1010()
 except TimeoutException:
     print(
-        "[SEM DADOS] Empresa 1010: SAP não apresentou resultados; "
+        f"[SEM DADOS] Empresa {EMPRESA}: SAP não apresentou resultados; "
         "seguindo sem exportação."
     )
+
+if len(EMPRESAS) == 1:
+    print(
+        f"Execução somente da empresa {EMPRESA}; "
+        "segunda consulta SAP não será executada."
+    )
+    driver.quit()
+    raise SystemExit(0)
 
 # ============================================================
 # VOLTAR PARA HOME

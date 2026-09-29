@@ -12,6 +12,14 @@ import win32com.client as win32
 # ============================================================
 
 PASTA_RAIZ = Path(os.environ["AUTOMACAO_PASTA_RAIZ"])
+EMPRESAS = {
+    empresa.strip()
+    for empresa in os.environ.get(
+        "AUTOMACAO_EMPRESAS",
+        "1010,1013"
+    ).split(",")
+    if empresa.strip()
+}
 
 MESES = [
     "01 - JANEIRO",
@@ -99,10 +107,10 @@ for arquivo in arquivos_excel:
         f"{arquivo.name} -> Empresa: {empresa}"
     )
 
-    if empresa == "1010":
+    if empresa == "1010" and empresa in EMPRESAS:
         arquivo_1010 = arquivo
 
-    elif empresa == "1013":
+    elif empresa == "1013" and empresa in EMPRESAS:
         arquivo_1013 = arquivo
 
     workbook.close()
@@ -456,12 +464,11 @@ ARQUIVO_DESTINO = (
     / f"RELATORIO SEG {HORARIO_RELATORIO}.xlsx"
 )
 
-novo_arquivo.save(ARQUIVO_DESTINO)
-
-
-print()
-print("Arquivo 1010 criado:")
-print(ARQUIVO_DESTINO)
+if "1010" in EMPRESAS:
+    novo_arquivo.save(ARQUIVO_DESTINO)
+    print()
+    print("Arquivo 1010 criado:")
+    print(ARQUIVO_DESTINO)
 
 
 # ============================================================
@@ -600,14 +607,13 @@ ARQUIVO_DESTINO_1013 = (
     / f"RELATORIO RG {HORARIO_RELATORIO}.xlsx"
 )
 
-novo_arquivo_1013.save(
-    ARQUIVO_DESTINO_1013
-)
-
-
-print()
-print("Arquivo 1013 criado:")
-print(ARQUIVO_DESTINO_1013)
+if "1013" in EMPRESAS:
+    novo_arquivo_1013.save(
+        ARQUIVO_DESTINO_1013
+    )
+    print()
+    print("Arquivo 1013 criado:")
+    print(ARQUIVO_DESTINO_1013)
 
 
 # ============================================================
@@ -617,7 +623,8 @@ print(ARQUIVO_DESTINO_1013)
 def criar_tabela_dinamica(
     caminho_arquivo,
     nome_tabela,
-    nome_aba="TABELA DINAMICA"
+    nome_aba="TABELA DINAMICA",
+    incluir_tipo_documento=False
 ):
 
     excel = None
@@ -700,13 +707,13 @@ def criar_tabela_dinamica(
         campo_lote.Orientation = 1
 
 
-        campo_tipo_documento = (
-            tabela_dinamica.PivotFields(
-                "Tipo de Documento"
+        if incluir_tipo_documento:
+            campo_tipo_documento = (
+                tabela_dinamica.PivotFields(
+                    "Tipo de Documento"
+                )
             )
-        )
-
-        campo_tipo_documento.Orientation = 1
+            campo_tipo_documento.Orientation = 1
 
 
         # CAMPO VALOR
@@ -756,11 +763,13 @@ def criar_tabela_dinamica(
 # CHAMADA DA TABELA DINAMICA 1010
 # ============================================================
 
-criar_tabela_dinamica(
-    ARQUIVO_DESTINO,
-    "TabelaDinamica1010",
-    "TABELA DINAMICA GERAL"
-)
+if "1010" in EMPRESAS:
+    criar_tabela_dinamica(
+        ARQUIVO_DESTINO,
+        "TabelaDinamica1010",
+        "TABELA DINAMICA GERAL",
+        incluir_tipo_documento=True
+    )
 
 
 # ============================================================
@@ -1252,7 +1261,8 @@ if arquivo_1013:
     criar_tabela_dinamica(
         ARQUIVO_DESTINO_1013,
         "TabelaDinamica1013",
-        "TABELA DINAMICA GERAL"
+        "TABELA DINAMICA GERAL",
+        incluir_tipo_documento=True
     )
 else:
     print("Sem arquivo 1013: tabela dinâmica RG não será criada.")
@@ -1620,4 +1630,4 @@ novo_arquivo.close()
 novo_arquivo_1013.close()
 
 print()
-print("PROCESSO DE CONFIGURAÇÃO DOS EXCELS FINALIZADO.")
+print("PROCESSO DE CONFIGURAÇÃO DO EXCEL FINALIZADO.")

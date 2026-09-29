@@ -44,6 +44,8 @@ class Aplicacao:
         self.senha_visivel = False
         self.data_inicial = tk.StringVar()
         self.data_final = tk.StringVar()
+        self.empresa_1010 = tk.BooleanVar(value=False)
+        self.empresa_1013 = tk.BooleanVar(value=False)
         self.status = tk.StringVar(value="Preencha os dados para iniciar.")
         self.executando = False
         self.cancelando = False
@@ -204,8 +206,26 @@ class Aplicacao:
             pady=(2, 0)
         )
 
+        ttk.Label(
+            principal,
+            text="Empresa",
+            style="Campo.TLabel"
+        ).grid(row=7, column=0, columnspan=2, pady=(10, 2))
+        empresas = ttk.Frame(principal, style="Tela.TFrame")
+        empresas.grid(row=8, column=0, columnspan=2)
+        ttk.Checkbutton(
+            empresas,
+            text="1010",
+            variable=self.empresa_1010
+        ).grid(row=0, column=0, padx=(0, 16))
+        ttk.Checkbutton(
+            empresas,
+            text="1013",
+            variable=self.empresa_1013
+        ).grid(row=0, column=1)
+
         botoes = ttk.Frame(principal, style="Tela.TFrame")
-        botoes.grid(row=7, column=0, columnspan=2, pady=(18, 8))
+        botoes.grid(row=9, column=0, columnspan=2, pady=(18, 8))
 
         self.botao = ttk.Button(
             botoes,
@@ -229,7 +249,7 @@ class Aplicacao:
             textvariable=self.status,
             wraplength=360,
             style="Status.TLabel"
-        ).grid(row=8, column=0, columnspan=2, pady=(0, 10))
+        ).grid(row=10, column=0, columnspan=2, pady=(0, 10))
 
         self.log_texto = tk.Text(
             principal,
@@ -240,7 +260,7 @@ class Aplicacao:
             background="white",
             foreground="black"
         )
-        self.log_texto.grid(row=9, column=0, columnspan=2)
+        self.log_texto.grid(row=11, column=0, columnspan=2)
 
     def _posicionar_sufixo_email(self, _evento=None):
         self.email_entry.icursor(
@@ -267,6 +287,8 @@ class Aplicacao:
         if not self.senha.get():
             self.senha_entry.focus_set()
             raise ValueError("Informe a senha.")
+        if not (self.empresa_1010.get() or self.empresa_1013.get()):
+            raise ValueError("Selecione ao menos uma empresa.")
 
         valores = []
         campos_data = (
@@ -418,11 +440,20 @@ class Aplicacao:
         self._configurar_log(pasta_manha)
 
         ambiente = os.environ.copy()
+        empresas_selecionadas = [
+            empresa
+            for empresa, selecionada in (
+                ("1010", self.empresa_1010.get()),
+                ("1013", self.empresa_1013.get()),
+            )
+            if selecionada
+        ]
         ambiente.update({
             "AUTOMACAO_EMAIL": self.email.get().strip(),
             "AUTOMACAO_SENHA": self.senha.get(),
             "AUTOMACAO_DATA_INICIAL": self.data_inicial.get().strip(),
             "AUTOMACAO_DATA_FINAL": self.data_final.get().strip(),
+            "AUTOMACAO_EMPRESAS": ",".join(empresas_selecionadas),
             "AUTOMACAO_PASTA_RAIZ": str(PASTA_RAIZ),
             "AUTOMACAO_DATA_PASTA": data_pasta.isoformat(),
             "AUTOMACAO_PASTA_ORIGEM": str(PASTA_RAIZ),
@@ -442,10 +473,10 @@ class Aplicacao:
             for etapa in etapas:
                 if (
                     etapa.name == "config_excel.py"
-                    and {"1010", "1013"}.issubset(empresas_sem_dados)
+                    and set(empresas_selecionadas).issubset(empresas_sem_dados)
                 ):
                     self._registrar(
-                        "SEM DADOS PARA ICATU E RIO GRANDE; "
+                        "SEM DADOS PARA AS EMPRESAS SELECIONADAS; "
                         "ENCERRANDO A AUTOMAÇÃO SEM EXECUTAR CONFIG_EXCEL.PY."
                     )
                     continue
