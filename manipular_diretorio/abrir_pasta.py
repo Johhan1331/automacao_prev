@@ -26,7 +26,7 @@ devolucao_is.mkdir(exist_ok=True)
 arquivo_word_devolucao_is = (
 	devolucao_is / "Confirmação de envio de pagamentos - Devolução IS.docx"
 )
-if not arquivo_word_devolucao_is.exists():
+if not any(devolucao_is.rglob(arquivo_word_devolucao_is.name)):
 	Document().save(arquivo_word_devolucao_is)
 
 devolucao_rg = pasta_manha / "DEVOLUÇÃO RG"
@@ -34,7 +34,7 @@ devolucao_rg.mkdir(exist_ok=True)
 arquivo_word_devolucao_rg = (
 	devolucao_rg / "Confirmação de envio de pagamentos - Devolução RG.docx"
 )
-if not arquivo_word_devolucao_rg.exists():
+if not any(devolucao_rg.rglob(arquivo_word_devolucao_rg.name)):
 	Document().save(arquivo_word_devolucao_rg)
 
 resgate_is = pasta_manha / "RESGATE IS"

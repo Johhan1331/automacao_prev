@@ -700,6 +700,15 @@ def criar_tabela_dinamica(
         campo_lote.Orientation = 1
 
 
+        campo_tipo_documento = (
+            tabela_dinamica.PivotFields(
+                "Tipo de Documento"
+            )
+        )
+
+        campo_tipo_documento.Orientation = 1
+
+
         # CAMPO VALOR
 
         campo_valor = (
