@@ -73,6 +73,46 @@ prefs = {
 
 options.add_experimental_option("prefs", prefs)
 
+
+def aguardar_download_exportacao(arquivos_anteriores, empresa, timeout=120):
+    prazo = time.monotonic() + timeout
+    nome_estavel = None
+    tamanho_anterior = None
+
+    while time.monotonic() < prazo:
+        arquivos_novos = [
+            arquivo
+            for arquivo in pasta_manha.glob("EXPORT_*.xlsx")
+            if arquivo.name not in arquivos_anteriores
+        ]
+        downloads_parciais = list(
+            pasta_manha.glob("EXPORT_*.crdownload")
+        )
+
+        if arquivos_novos and not downloads_parciais:
+            arquivo = max(
+                arquivos_novos,
+                key=lambda item: item.stat().st_mtime
+            )
+            tamanho_atual = arquivo.stat().st_size
+
+            if arquivo.name == nome_estavel and tamanho_atual == tamanho_anterior:
+                return arquivo
+
+            nome_estavel = arquivo.name
+            tamanho_anterior = tamanho_atual
+        else:
+            nome_estavel = None
+            tamanho_anterior = None
+
+        time.sleep(1)
+
+    raise TimeoutException(
+        f"Download do arquivo da empresa {empresa} não foi concluído "
+        f"em {timeout} segundos."
+    )
+
+
 driver = webdriver.Chrome(options=options)
 wait = WebDriverWait(driver, 20)
 
@@ -481,9 +521,17 @@ def exportar_relatorio_1010():
             (By.ID, "UpDownDialogChoose")
         )
     )
+    arquivos_anteriores = {
+        arquivo.name
+        for arquivo in pasta_manha.glob("EXPORT_*.xlsx")
+    }
     botao_ok.click()
     print("OK clicado!")
-    time.sleep(3)
+    arquivo_exportado = aguardar_download_exportacao(
+        arquivos_anteriores,
+        "1010"
+    )
+    print(f"Download concluído: {arquivo_exportado.name}")
 
 
 try:
@@ -869,14 +917,21 @@ botao_ok = wait.until(
     )
 )
 
+arquivos_anteriores = {
+    arquivo.name
+    for arquivo in pasta_manha.glob("EXPORT_*.xlsx")
+}
 botao_ok.click()
-print("Excel da empresa 1013 exportado!")
+arquivo_exportado = aguardar_download_exportacao(
+    arquivos_anteriores,
+    "1013"
+)
+print(f"Excel da empresa 1013 exportado: {arquivo_exportado.name}")
 
 # ============================================================
 # FINALIZAR
 # ============================================================
 
 print("Exportações concluídas. Fechando o navegador automaticamente...")
-time.sleep(3)
 driver.quit()
 print("Navegador fechado.")

@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 
-PASTA_RAIZ = Path(r"X:\Comum-PagamentosDiarios\AUTOMACAO_TESTE")
+PASTA_RAIZ = Path(r"X:\Comum-PagamentosDiarios")
 PASTA_PROJETO = Path(__file__).resolve().parent
 PASTA_RELATORIOS = PASTA_PROJETO / "relatorios_sap"
 PASTA_DIRETORIO = PASTA_PROJETO / "manipular_diretorio"

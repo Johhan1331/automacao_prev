@@ -92,7 +92,7 @@ for arquivo in arquivos_excel:
     planilha = workbook.active
 
     empresa = str(
-        planilha["C4"].value
+        planilha["C6"].value
     ).strip()
 
     print(
@@ -352,7 +352,7 @@ for coluna, titulo in enumerate(
 linha_destino = 2
 
 for linha in planilha_1010.iter_rows(
-    min_row=4,
+    min_row=6,
     min_col=2,
     max_col=26,
     values_only=True
@@ -494,7 +494,7 @@ linha_destino_1013 = 2
 
 for linha in (
     planilha_1013.iter_rows(
-        min_row=4,
+        min_row=6,
         min_col=2,
         max_col=26,
         values_only=True
@@ -625,7 +625,7 @@ def criar_tabela_dinamica(
 
     try:
 
-        excel = win32.Dispatch(
+        excel = win32.DispatchEx(
             "Excel.Application"
         )
 

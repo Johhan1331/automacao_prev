@@ -23,13 +23,19 @@ pasta_manha.mkdir(exist_ok=True)
 
 devolucao_is = pasta_manha / "DEVOLUÇÃO IS"
 devolucao_is.mkdir(exist_ok=True)
-docword = Document()
-docword.save(devolucao_is / "Confirmação de envio de pagamentos - Devolução IS.docx")
+arquivo_word_devolucao_is = (
+	devolucao_is / "Confirmação de envio de pagamentos - Devolução IS.docx"
+)
+if not arquivo_word_devolucao_is.exists():
+	Document().save(arquivo_word_devolucao_is)
 
 devolucao_rg = pasta_manha / "DEVOLUÇÃO RG"
 devolucao_rg.mkdir(exist_ok=True)
-docword = Document()
-docword.save(devolucao_rg / "Confirmação de envio de pagamentos - Devolução RG.docx")
+arquivo_word_devolucao_rg = (
+	devolucao_rg / "Confirmação de envio de pagamentos - Devolução RG.docx"
+)
+if not arquivo_word_devolucao_rg.exists():
+	Document().save(arquivo_word_devolucao_rg)
 
 resgate_is = pasta_manha / "RESGATE IS"
 resgate_is.mkdir(exist_ok=True)
