@@ -60,7 +60,7 @@ pasta_manha = (
 # HORÁRIO DA EXTRAÇÃO
 # ============================================================
 
-if datetime.now().hour < 10:
+if datetime.now().hour < 11:
     HORARIO_RELATORIO = "8H"
 else:
     HORARIO_RELATORIO = "11H"
