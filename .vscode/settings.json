@@ -1,0 +1,5 @@
+{
+  "python.defaultInterpreterPath": "C:\\Users\\JOFERREIRA\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+"python.analysis.autoSearchPaths": true,
+"python-envs.defaultEnvManager": "ms-python.python:system"
+}
