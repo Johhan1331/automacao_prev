@@ -23,6 +23,7 @@ MESES = [
 
 COR_FUNDO = "#1b3157"
 COR_DESTAQUE = "#5fbb48"
+COR_EMPRESA = "#2e5a8d"
 SUFIXO_EMAIL = "@icatuseguros.com.br"
 
 
@@ -46,6 +47,7 @@ class Aplicacao:
         self.data_final = tk.StringVar()
         self.empresa_1010 = tk.BooleanVar(value=False)
         self.empresa_1013 = tk.BooleanVar(value=False)
+        self.remessa_extra = tk.BooleanVar(value=False)
         self.status = tk.StringVar(value="Preencha os dados para iniciar.")
         self.executando = False
         self.cancelando = False
@@ -74,11 +76,6 @@ class Aplicacao:
             "Status.TLabel",
             background=COR_FUNDO,
             foreground=COR_DESTAQUE
-        )
-        estilo.configure(
-            "Campo.TEntry",
-            foreground="black",
-            fieldbackground="white"
         )
         estilo.configure(
             "Acao.TButton",
@@ -112,11 +109,17 @@ class Aplicacao:
             text="Email",
             style="Campo.TLabel"
         ).grid(row=2, column=0, columnspan=2, pady=(0, 2))
-        self.email_entry = ttk.Entry(
+        self.email_entry = tk.Entry(
             principal,
             textvariable=self.email,
             width=32,
-            style="Campo.TEntry"
+            background="white",
+            foreground="black",
+            highlightthickness=1,
+            highlightbackground=COR_DESTAQUE,
+            highlightcolor=COR_DESTAQUE,
+            borderwidth=1,
+            relief="solid"
         )
         self.email_entry.grid(
             row=3,
@@ -146,12 +149,18 @@ class Aplicacao:
             pady=(0, 10)
         )
 
-        self.senha_entry = ttk.Entry(
+        self.senha_entry = tk.Entry(
             senha_frame,
             textvariable=self.senha,
             width=32,
             show="*",
-            style="Campo.TEntry"
+            background="white",
+            foreground="black",
+            highlightthickness=1,
+            highlightbackground=COR_DESTAQUE,
+            highlightcolor=COR_DESTAQUE,
+            borderwidth=1,
+            relief="solid"
         )
         self.senha_entry.grid(row=0, column=1, sticky="w")
 
@@ -181,11 +190,17 @@ class Aplicacao:
             text="Data final",
             style="Campo.TLabel"
         ).grid(row=0, column=1, sticky="w", padx=(8, 0))
-        self.data_inicial_entry = ttk.Entry(
+        self.data_inicial_entry = tk.Entry(
             datas,
             textvariable=self.data_inicial,
             width=18,
-            style="Campo.TEntry"
+            background="white",
+            foreground="black",
+            highlightthickness=1,
+            highlightbackground=COR_DESTAQUE,
+            highlightcolor=COR_DESTAQUE,
+            borderwidth=1,
+            relief="solid"
         )
         self.data_inicial_entry.grid(
             row=1,
@@ -193,11 +208,17 @@ class Aplicacao:
             padx=(0, 8),
             pady=(2, 0)
         )
-        self.data_final_entry = ttk.Entry(
+        self.data_final_entry = tk.Entry(
             datas,
             textvariable=self.data_final,
             width=18,
-            style="Campo.TEntry"
+            background="white",
+            foreground="black",
+            highlightthickness=1,
+            highlightbackground=COR_DESTAQUE,
+            highlightcolor=COR_DESTAQUE,
+            borderwidth=1,
+            relief="solid"
         )
         self.data_final_entry.grid(
             row=1,
@@ -213,16 +234,51 @@ class Aplicacao:
         ).grid(row=7, column=0, columnspan=2, pady=(10, 2))
         empresas = ttk.Frame(principal, style="Tela.TFrame")
         empresas.grid(row=8, column=0, columnspan=2)
-        ttk.Checkbutton(
+        tk.Checkbutton(
             empresas,
             text="1010",
-            variable=self.empresa_1010
+            variable=self.empresa_1010,
+            background=COR_EMPRESA,
+            foreground="white",
+            activebackground=COR_EMPRESA,
+            activeforeground="white",
+            selectcolor=COR_FUNDO,
+            relief="flat",
+            borderwidth=0,
+            highlightthickness=0,
+            padx=10,
+            pady=4
         ).grid(row=0, column=0, padx=(0, 16))
-        ttk.Checkbutton(
+        tk.Checkbutton(
             empresas,
             text="1013",
-            variable=self.empresa_1013
+            variable=self.empresa_1013,
+            background=COR_EMPRESA,
+            foreground="white",
+            activebackground=COR_EMPRESA,
+            activeforeground="white",
+            selectcolor=COR_FUNDO,
+            relief="flat",
+            borderwidth=0,
+            highlightthickness=0,
+            padx=10,
+            pady=4
         ).grid(row=0, column=1)
+        tk.Checkbutton(
+            empresas,
+            text="Remessa Extra",
+            variable=self.remessa_extra,
+            background=COR_EMPRESA,
+            foreground="white",
+            activebackground=COR_EMPRESA,
+            activeforeground="white",
+            selectcolor=COR_FUNDO,
+            relief="flat",
+            borderwidth=0,
+            highlightthickness=0,
+            padx=10,
+            pady=4
+        ).grid(row=1, column=0, columnspan=2, pady=(6, 0))
 
         botoes = ttk.Frame(principal, style="Tela.TFrame")
         botoes.grid(row=9, column=0, columnspan=2, pady=(18, 8))
@@ -454,6 +510,9 @@ class Aplicacao:
             "AUTOMACAO_DATA_INICIAL": self.data_inicial.get().strip(),
             "AUTOMACAO_DATA_FINAL": self.data_final.get().strip(),
             "AUTOMACAO_EMPRESAS": ",".join(empresas_selecionadas),
+            "AUTOMACAO_REMESSA_EXTRA": (
+                "1" if self.remessa_extra.get() else "0"
+            ),
             "AUTOMACAO_PASTA_RAIZ": str(PASTA_RAIZ),
             "AUTOMACAO_DATA_PASTA": data_pasta.isoformat(),
             "AUTOMACAO_PASTA_ORIGEM": str(PASTA_RAIZ),

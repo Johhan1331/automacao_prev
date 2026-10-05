@@ -70,6 +70,31 @@ if datetime.now().hour < 11:
 else:
     HORARIO_RELATORIO = "11H"
 
+REMESSA_EXTRA = (
+    os.environ.get("AUTOMACAO_REMESSA_EXTRA", "0") == "1"
+)
+
+
+def montar_caminho_relatorio(prefixo, horario, pasta):
+
+    if not REMESSA_EXTRA:
+        return pasta / f"{prefixo} {horario}.xlsx"
+
+    numero = 1
+
+    while True:
+        sufixo = (
+            "REMESSA EXTRA"
+            if numero == 1
+            else f"REMESSA EXTRA {numero}"
+        )
+        caminho = pasta / f"{prefixo} {sufixo}.xlsx"
+
+        if not caminho.exists():
+            return caminho
+
+        numero += 1
+
 
 # ============================================================
 # IDENTIFICAÇÃO DOS EXCELS NA PASTA MANHÃ
@@ -462,9 +487,10 @@ nova_planilha.column_dimensions["M"].width = 11
 nova_planilha.column_dimensions["P"].width = 18
 
 
-ARQUIVO_DESTINO = (
+ARQUIVO_DESTINO = montar_caminho_relatorio(
+    "RELATORIO SEG",
+    HORARIO_RELATORIO,
     pasta_manha
-    / f"RELATORIO SEG {HORARIO_RELATORIO}.xlsx"
 )
 
 if "1010" in EMPRESAS:
@@ -603,9 +629,10 @@ nova_planilha_1013.column_dimensions["P"].width = 18
 
 # SALVAR
 
-ARQUIVO_DESTINO_1013 = (
+ARQUIVO_DESTINO_1013 = montar_caminho_relatorio(
+    "RELATORIO RG",
+    HORARIO_RELATORIO,
     pasta_manha
-    / f"RELATORIO RG {HORARIO_RELATORIO}.xlsx"
 )
 
 if "1013" in EMPRESAS:
