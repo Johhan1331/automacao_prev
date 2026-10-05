@@ -6,6 +6,11 @@ from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 import win32com.client as win32
 
+FONTE_PLANILHA = Font(
+    name="Aptos Narrow",
+    size=11
+)
+
 
 # ============================================================
 # CONFIGURAÇÃO DE PASTA
@@ -214,8 +219,8 @@ LOTES_HISTORICOS_CACHE = {}
 
 def registro_1010_deve_ser_incluido(linha):
 
-    tipo_documento = str(linha[7]).strip()
-    origem = str(linha[8]).strip().upper()
+    tipo_documento = str(linha[8]).strip()
+    origem = str(linha[9]).strip().upper()
 
     return not (
         tipo_documento == "79"
@@ -360,7 +365,7 @@ for coluna, titulo in enumerate(
 linha_destino = 2
 
 for linha in planilha_1010.iter_rows(
-    min_row=6,
+    min_row=4,
     min_col=2,
     max_col=26,
     values_only=True
@@ -370,8 +375,8 @@ for linha in planilha_1010.iter_rows(
         continue
 
     if not lote_eh_novo(
-        linha[13],
-        linha[7],
+        linha[14],
+        linha[8],
         "1010"
     ):
         continue
@@ -438,10 +443,8 @@ for linha in nova_planilha.iter_rows():
 
     for celula in linha:
 
-        celula.font = Font(
-            name="Aptos Narrow",
-            size=11
-        )
+        if celula.value is not None:
+            celula.font = FONTE_PLANILHA
 
 
 # AJUSTAR COLUNAS
@@ -501,7 +504,7 @@ linha_destino_1013 = 2
 
 for linha in (
     planilha_1013.iter_rows(
-        min_row=6,
+        min_row=4,
         min_col=2,
         max_col=26,
         values_only=True
@@ -511,8 +514,8 @@ for linha in (
 ):
 
     if not lote_eh_novo(
-        linha[13],
-        linha[7],
+        linha[14],
+        linha[8],
         "1013"
     ):
         continue
@@ -579,10 +582,8 @@ for linha in nova_planilha_1013.iter_rows():
 
     for celula in linha:
 
-        celula.font = Font(
-            name="Aptos Narrow",
-            size=11
-        )
+        if celula.value is not None:
+            celula.font = FONTE_PLANILHA
 
 
 # AJUSTAR COLUNAS
@@ -1148,10 +1149,8 @@ def criar_arquivo_tipo(
 
         for celula in linha:
 
-            celula.font = Font(
-                name="Aptos Narrow",
-                size=11
-            )
+            if celula.value is not None:
+                celula.font = FONTE_PLANILHA
 
 
     # AJUSTAR COLUNAS
@@ -1509,10 +1508,8 @@ def criar_arquivo_tipo_1013(
 
         for celula in linha:
 
-            celula.font = Font(
-                name="Aptos Narrow",
-                size=11
-            )
+            if celula.value is not None:
+                celula.font = FONTE_PLANILHA
 
 
     # AJUSTAR COLUNAS
