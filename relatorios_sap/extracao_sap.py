@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import (
+    ElementNotInteractableException,
     StaleElementReferenceException,
     TimeoutException,
 )
@@ -122,6 +123,30 @@ def aguardar_download_exportacao(arquivos_anteriores, empresa, timeout=120):
 driver = webdriver.Chrome(options=options)
 wait = WebDriverWait(driver, 20)
 
+
+def enviar_valor(campo, valor, campo_id):
+    for tentativa in range(2):
+        try:
+            campo = wait.until(
+                EC.element_to_be_clickable((By.ID, campo_id))
+            )
+            driver.execute_script(
+                "arguments[0].scrollIntoView({block: 'center'});",
+                campo
+            )
+            campo.click()
+            campo.send_keys(valor)
+            return
+        except (
+            ElementNotInteractableException,
+            StaleElementReferenceException,
+            TimeoutException,
+        ):
+            if tentativa == 0:
+                time.sleep(1)
+                continue
+            raise
+
 driver.maximize_window()
 
 driver.get(
@@ -211,8 +236,10 @@ app = wait.until(
 
 app.click()
 
-driver.switch_to.frame(
-    "application-Shell-startGUI-iframe"
+wait.until(
+    EC.frame_to_be_available_and_switch_to_it(
+        (By.ID, "application-Shell-startGUI-iframe")
+    )
 )
 
 driver.execute_script(
@@ -358,7 +385,7 @@ for i, valor in enumerate(tipos_documento):
         )
     )
 
-    campo.send_keys(valor)
+    enviar_valor(campo, valor, campo_id)
 
     print(
         f"Tipo {valor} preenchido!"
@@ -584,8 +611,10 @@ app = wait.until(
 
 app.click()
 
-driver.switch_to.frame(
-    "application-Shell-startGUI-iframe"
+wait.until(
+    EC.frame_to_be_available_and_switch_to_it(
+        (By.ID, "application-Shell-startGUI-iframe")
+    )
 )
 
 driver.execute_script(
@@ -742,7 +771,7 @@ for i, valor in enumerate(tipos_documento):
         )
     )
 
-    campo.send_keys(valor)
+    enviar_valor(campo, valor, campo_id)
 
     print(
         f"Tipo {valor} preenchido!"
